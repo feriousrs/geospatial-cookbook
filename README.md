@@ -46,17 +46,17 @@ Every example aims to be:
 
 ## Featured example: Toronto scene
 
-A multi-layer 3D urban scene built from individual objects rather than a single draped mesh. Each layer can be switched on or off, and clicking a building or tree shows its attributes.
+A multi-layer 3D urban scene built from individual objects rather than a single draped mesh. Each layer can be switched on or off, and clicking an object shows its attributes.
 
 <img src="docs/images/layers.jpg" alt="Six views of the scene showing each layer separately and all layers together" width="100%">
 
 | Layer | In the sample |
 | --- | --- |
 | Buildings at LoD 1.3 and LoD 2.2 | 19 buildings with attributes |
-| Roads, sidewalks, curbs and centre lines | Surfaces with PBR textures |
+| Roads, sidewalks, curbs and centre lines | Surfaces with PBR textures and attributes |
 | Trees | 142 instanced trees with attributes |
-| Power lines | One stretch of line |
-| Poles, street lights and signals | 68 instanced poles |
+| Power lines | One stretch of line with attributes |
+| Poles, street lights and signals | 68 instanced poles with attributes |
 
 <img src="docs/images/street.jpg" alt="Close view of a street with trees, poles, power lines and road surfaces" width="100%">
 

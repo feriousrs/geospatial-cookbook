@@ -73,7 +73,7 @@ const scene = Cesium.BoundingSphere.fromBoundingSpheres(tilesets.map(t => t.boun
 viewer.camera.viewBoundingSphere(scene, new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 420));
 viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
 
-// Buildings and trees carry their attributes in the tiles.
+// Every object carries its attributes in the tiles.
 const info = document.getElementById('info');
 new Cesium.ScreenSpaceEventHandler(viewer.canvas).setInputAction(({ position }) => {
   const picked = viewer.scene.pick(position);
