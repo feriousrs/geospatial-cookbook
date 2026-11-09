@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toronto 3D Tiles Sample</title>
+<script src="https://cesium.com/downloads/cesiumjs/releases/1.116/Build/Cesium/Cesium.js"></script>
+<link href="https://cesium.com/downloads/cesiumjs/releases/1.116/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+<style>
+  html, body, #cesium { width: 100%; height: 100%; margin: 0; background: #1b1f24; }
+  .box { position: absolute; z-index: 1; left: 12px; padding: 10px 14px; border-radius: 6px;
+         background: rgba(20, 24, 30, .88); color: #e8e8e8; font: 13px/1.7 system-ui, sans-serif; }
+  #panel { top: 12px; }
+  #panel b { display: block; }
+  #panel label { display: block; cursor: pointer; }
+  #info { bottom: 40px; max-width: 360px; max-height: 45%; overflow: auto; margin: 0;
+          font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
+  #info:empty { display: none; }
+</style>
+</head>
+<body>
+<div id="cesium"></div>
+<div id="panel" class="box"><b>Toronto sample, 250 × 250 m</b><div id="layers"></div></div>
+<pre id="info" class="box"></pre>
+<script type="module">
+const LAYERS = [
+  { name: 'Buildings LoD 1.3', url: 'data/buildings/tileset_lod1.3.json', on: false },
+  { name: 'Buildings LoD 2.2', url: 'data/buildings/tileset_lod2.2.json', on: true },
+  { name: 'Roads, sidewalks, curbs', url: 'data/transportation/tileset.json', on: true },
+  { name: 'Trees', url: 'data/trees/tileset.json', on: true },
+  { name: 'Power lines', url: 'data/powerlines/tileset.json', on: true },
+  { name: 'Poles, lights, signals', url: 'data/poles/tileset.json', on: true },
+];
+
+// A tile with several glTF contents stays empty for good if one of its requests is refused.
+Cesium.RequestScheduler.priorityHeapLength = 8192;
+Cesium.RequestScheduler.maximumRequests = 256;
+
+// No globe, imagery or terrain, so nothing here needs a Cesium ion token.
+const viewer = new Cesium.Viewer('cesium', {
+  globe: false, baseLayer: false, skyBox: false, skyAtmosphere: false,
+  baseLayerPicker: false, geocoder: false, homeButton: false, sceneModePicker: false,
+  navigationHelpButton: false, animation: false, timeline: false, fullscreenButton: false,
+  infoBox: false, selectionIndicator: false,
+});
+viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#1b1f24');
+viewer.clock.currentTime = Cesium.JulianDate.fromIso8601('2026-06-21T16:00:00Z');  // midday sun in Toronto
+viewer.clock.shouldAnimate = false;
+
+const tilesets = await Promise.all(LAYERS.map(async L => {
+  const label = document.createElement('label');
+  const box = Object.assign(document.createElement('input'), { type: 'checkbox', checked: L.on });
+  label.append(box, ' ' + L.name);
+  document.getElementById('layers').append(label);
+
+  const tileset = await Cesium.Cesium3DTileset.fromUrl(L.url, { backFaceCulling: false });
+  box.onchange = () => { tileset.show = box.checked; };
+  tileset.show = box.checked;
+  viewer.scene.primitives.add(tileset);
+  return tileset;
+}));
+
+// A plain ground sheet just under the lowest road.
+const { root } = await (await fetch('data/transportation/tileset.json')).json();
+const [west, south, east, north, minHeight] = root.boundingVolume.region;
+viewer.entities.add({ rectangle: {
+  coordinates: new Cesium.Rectangle(west, south, east, north),
+  height: minHeight - 0.3,
+  material: Cesium.Color.fromCssColorString('#4a4f55'),
+} });
+
+const scene = Cesium.BoundingSphere.fromBoundingSpheres(tilesets.map(t => t.boundingSphere));
+viewer.camera.viewBoundingSphere(scene, new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-35), 420));
+viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+
+// Buildings and trees carry their attributes in the tiles.
+const info = document.getElementById('info');
+new Cesium.ScreenSpaceEventHandler(viewer.canvas).setInputAction(({ position }) => {
+  const picked = viewer.scene.pick(position);
+  if (picked instanceof Cesium.Cesium3DTileFeature) {
+    info.textContent = picked.getPropertyIds()
+      .filter(id => picked.getProperty(id) != null)
+      .map(id => `${id}: ${picked.getProperty(id)}`).join('\n');
+  } else {
+    info.textContent = picked ? 'This object has no attributes in its tiles.' : '';
+  }
+}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+</script>
+</body>
+</html>
